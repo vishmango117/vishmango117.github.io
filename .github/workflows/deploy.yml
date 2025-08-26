@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch: {}
 
 permissions:
@@ -24,8 +24,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -36,13 +36,19 @@ jobs:
       - name: Determine base path for GitHub Pages
         id: basepath
         run: |
-          REPO="${{ github.event.repository.name }}"
-          OWNER="${{ github.repository_owner }}"
-          if [ "$REPO" = "$OWNER.github.io" ]; then
-            echo "BASE_PATH=/" >> $GITHUB_ENV
+          # Allow override via repository variable PAGES_BASE_PATH (e.g., "/" or "/my-repo")
+          if [ -n "${{ vars.PAGES_BASE_PATH }}" ]; then
+            echo "BASE_PATH=${{ vars.PAGES_BASE_PATH }}" >> $GITHUB_ENV
           else
-            echo "BASE_PATH=/$REPO" >> $GITHUB_ENV
+            REPO="${{ github.event.repository.name }}"
+            OWNER="${{ github.repository_owner }}"
+            if [ "$REPO" = "$OWNER.github.io" ]; then
+              echo "BASE_PATH=/" >> $GITHUB_ENV
+            else
+              echo "BASE_PATH=/$REPO" >> $GITHUB_ENV
+            fi
           fi
+          echo "Resolved BASE_PATH=$(cat $GITHUB_ENV | sed -n 's/^BASE_PATH=\(.*\)$/\1/p')"
 
       - name: Build static site
         env:
@@ -67,4 +73,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
